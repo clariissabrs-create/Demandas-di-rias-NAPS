@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Demandas do Setor — NAPS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Tela de Login (Acesso Único NAPS) -->
+  <div id="telaLogin" class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-lg max-w-sm w-full p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-sm">
+          <i data-lucide="lock" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-slate-900">Acesso Restrito — NAPS</h1>
+          <p class="text-xs text-slate-500">Gestor de Demandas do Setor</p>
+        </div>
+      </div>
+
+      <form id="formLogin" onsubmit="efetuarLogin(event)" class="space-y-4">
+        <div>
+          <label for="loginUsuario" class="block text-xs font-medium text-slate-700 mb-1">Usuário</label>
+          <input type="text" id="loginUsuario" required autocomplete="username" placeholder="Digite o usuário"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+        </div>
+
+        <div>
+          <label for="loginSenha" class="block text-xs font-medium text-slate-700 mb-1">Senha</label>
+          <input type="password" id="loginSenha" required autocomplete="current-password" placeholder="Digite a senha"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+        </div>
+
+        <p id="erroLogin" class="hidden text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          Usuário ou senha inválidos. Tente novamente.
+        </p>
+
+        <button type="submit"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Entrar</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Aplicação Principal -->
+  <div id="appConteudo" class="hidden min-h-screen flex-col">
+    <!-- Cabeçalho -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-sm">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 leading-tight">Gestor de Demandas — NAPS</h1>
+            <p class="text-xs text-slate-500 hidden sm:block">Controle diário por semestre, sistema, categoria e responsável</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="abrirModalListas('sistemas')" class="text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm cursor-pointer" title="Editar ou excluir opções de Semestres, Sistemas, Categorias e Responsáveis">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-600"></i>
+            <span class="hidden md:inline">Editar Listas</span>
+          </button>
+          <button id="btnLimparExemplos" onclick="limparExemplos()" class="hidden text-xs font-medium px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition flex items-center gap-1.5 cursor-pointer" title="Remover os dados iniciais de demonstração">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Limpar Exemplos</span>
+          </button>
+          <button onclick="exportarCSV()" class="text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+            <span class="hidden sm:inline">Exportar CSV</span>
+          </button>
+          <button onclick="sairSistema()" title="Sair do sistema"
+            class="text-xs sm:text-sm font-medium px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Sair</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1">
+
+      <!-- Indicadores (KPIs) -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Filtrado</p>
+            <p id="kpiTotal" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="p-2.5 bg-slate-100 text-slate-600 rounded-lg">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-amber-600 uppercase tracking-wider">Pendentes</p>
+            <p id="kpiPendentes" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-blue-600 uppercase tracking-wider">Em Andamento</p>
+            <p id="kpiAndamento" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+            <i data-lucide="loader-2" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-emerald-600 uppercase tracking-wider">Concluídas</p>
+            <p id="kpiConcluidas" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+          </div>
+          <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Formulário de Nova Demanda -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
+            <span>Nova Demanda Diária</span>
+          </h2>
+          <span class="text-xs text-slate-400">Bloqueio automático de demandas duplicadas no mesmo dia</span>
+        </div>
+
+        <div id="alertaDuplicidade" class="hidden mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+          <span id="textoAlertaDuplicidade">Esta demanda já foi registrada hoje para este mesmo sistema e categoria.</span>
+        </div>
+
+        <form id="formDemanda" onsubmit="adicionarDemanda(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+          <!-- Data -->
+          <div class="lg:col-span-2">
+            <label for="inputData" class="block text-xs font-medium text-slate-700 mb-1">Data *</label>
+            <input type="date" id="inputData" required onchange="atualizarSemestrePelaData()"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+          </div>
+
+          <!-- Semestre (com opções futuras e incluir/editar) -->
+          <div class="lg:col-span-2">
+            <div class="flex items-center justify-between mb-1">
+              <label for="selectSemestre" class="block text-xs font-medium text-slate-700">Semestre *</label>
+              <button type="button" onclick="abrirModalListas('semestres')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer" title="Editar semestres">
+                Editar
+              </button>
+            </div>
+            <select id="selectSemestre" required onchange="verificarNovoSemestre(this)"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </select>
+          </div>
+
+          <!-- Sistema (com opção Editar) -->
+          <div class="lg:col-span-2">
+            <div class="flex items-center justify-between mb-1">
+              <label for="selectSistema" class="block text-xs font-medium text-slate-700">Sistema *</label>
+              <button type="button" onclick="abrirModalListas('sistemas')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer" title="Editar sistemas">
+                Editar
+              </button>
+            </div>
+            <select id="selectSistema" required onchange="verificarNovoSistema(this)"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </select>
+          </div>
+
+          <!-- Categoria (com opção Editar) -->
+          <div class="lg:col-span-3">
+            <div class="flex items-center justify-between mb-1">
+              <label for="selectCategoria" class="block text-xs font-medium text-slate-700">Categoria *</label>
+              <button type="button" onclick="abrirModalListas('categorias')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer" title="Editar categorias">
+                Editar
+              </button>
+            </div>
+            <select id="selectCategoria" required onchange="verificarNovaCategoria(this)"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </select>
+          </div>
+
+          <!-- Responsável (com opção Editar) -->
+          <div class="lg:col-span-3">
+            <div class="flex items-center justify-between mb-1">
+              <label for="selectResponsavel" class="block text-xs font-medium text-slate-700">Responsável *</label>
+              <button type="button" onclick="abrirModalListas('responsaveis')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer" title="Editar responsáveis">
+                Editar
+              </button>
+            </div>
+            <select id="selectResponsavel" required onchange="verificarNovoResponsavel(this)"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </select>
+          </div>
+
+          <!-- Demanda Diária -->
+          <div class="lg:col-span-5">
+            <label for="inputDescricao" class="block text-xs font-medium text-slate-700 mb-1">Demanda Diária *</label>
+            <input type="text" id="inputDescricao" required placeholder="Descreva a atividade, protocolo ou solicitação..."
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+          </div>
+
+          <!-- Observações -->
+          <div class="lg:col-span-3">
+            <label for="inputObs" class="block text-xs font-medium text-slate-700 mb-1">Observações (opcional)</label>
+            <input type="text" id="inputObs" placeholder="Ex: Nº Processo ou detalhes"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+          </div>
+
+          <!-- Status Inicial -->
+          <div class="lg:col-span-2">
+            <label for="selectStatus" class="block text-xs font-medium text-slate-700 mb-1">Status Inicial</label>
+            <select id="selectStatus"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="Pendente">Pendente</option>
+              <option value="Em Andamento">Em Andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+
+          <!-- Botão Salvar -->
+          <div class="lg:col-span-2 flex items-end">
+            <button type="submit"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Incluir</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Filtros e Tabela -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Barra de Filtros -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50/60 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <i data-lucide="filter" class="w-4 h-4 text-slate-500"></i>
+              <span>Demandas Registradas</span>
+            </h2>
+            <button onclick="limparFiltros()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer">
+              Limpar filtros
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+            <div class="relative">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              <input type="text" id="filtroBusca" oninput="renderizarTabela()" placeholder="Buscar demanda ou obs..."
+                class="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+
+            <select id="filtroSemestre" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Semestres</option>
+            </select>
+
+            <select id="filtroSistema" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Sistemas</option>
+            </select>
+
+            <select id="filtroCategoria" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todas as Categorias</option>
+            </select>
+
+            <select id="filtroResponsavel" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Responsáveis</option>
+            </select>
+
+            <input type="date" id="filtroData" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+
+            <select id="filtroStatus" onchange="renderizarTabela()"
+              class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todos os Status</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Em Andamento">Em Andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabela Responsiva -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th class="py-3 px-4">Data</th>
+                <th class="py-3 px-4">Semestre</th>
+                <th class="py-3 px-4">Sistema / Categoria</th>
+                <th class="py-3 px-4">Demanda Diária</th>
+                <th class="py-3 px-4">Responsável</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCorpo" class="divide-y divide-slate-100 text-sm">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Estado Vazio -->
+        <div id="estadoVazio" class="hidden py-12 px-4 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+            <i data-lucide="inbox" class="w-6 h-6"></i>
+          </div>
+          <p class="text-sm font-medium text-slate-700">Nenhuma demanda encontrada</p>
+          <p class="text-xs text-slate-500 mt-1">Cadastre uma nova demanda acima ou ajuste os filtros selecionados.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Novo Semestre -->
+  <div id="modalSemestre" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-1">Adicionar Novo Semestre</h3>
+      <p class="text-xs text-slate-500 mb-4">O semestre ficará salvo na lista para os próximos registros.</p>
+      <input type="text" id="inputNovoSemestre" placeholder="Ex: 2028.1, 2028.2..."
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarNovoSemestre();}" />
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="fecharModalSemestre()" class="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmarNovoSemestre()" class="px-3.5 py-2 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
+          Salvar Semestre
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Novo Sistema -->
+  <div id="modalSistema" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-1">Adicionar Novo Sistema</h3>
+      <p class="text-xs text-slate-500 mb-4">O sistema ficará salvo na lista do setor para os próximos registros.</p>
+      <input type="text" id="inputNovoSistema" placeholder="Ex: SIGA, Vestib..."
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarNovoSistema();}" />
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="fecharModalSistema()" class="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmarNovoSistema()" class="px-3.5 py-2 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
+          Salvar Sistema
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nova Categoria -->
+  <div id="modalCategoria" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-1">Adicionar Nova Categoria</h3>
+      <p class="text-xs text-slate-500 mb-4">A categoria ficará salva na lista para os próximos registros.</p>
+      <input type="text" id="inputNovaCategoria" placeholder="Ex: Atendimento, Relatórios..."
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarNovaCategoria();}" />
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="fecharModalCategoria()" class="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmarNovaCategoria()" class="px-3.5 py-2 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
+          Salvar Categoria
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Novo Responsável -->
+  <div id="modalResponsavel" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900 mb-1">Adicionar Novo Responsável</h3>
+      <p class="text-xs text-slate-500 mb-4">O nome ficará salvo na lista da equipe para os próximos registros.</p>
+      <input type="text" id="inputNovoResponsavel" placeholder="Digite o nome da pessoa..."
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarNovoResponsavel();}" />
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="fecharModalResponsavel()" class="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmarNovoResponsavel()" class="px-3.5 py-2 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
+          Salvar Nome
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Listas (Semestres, Sistemas, Categorias, Responsáveis) -->
+  <div id="modalListas" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Editar Opções das Listas</h3>
+          <p class="text-xs text-slate-500">Renomeie, inclua ou exclua opções cadastradas</p>
+        </div>
+        <button onclick="fecharModalListas()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Abas -->
+      <div class="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
+        <button type="button" onclick="selecionarAbaLista('semestres')" id="tab_semestres" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+          Semestres
+        </button>
+        <button type="button" onclick="selecionarAbaLista('sistemas')" id="tab_sistemas" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+          Sistemas
+        </button>
+        <button type="button" onclick="selecionarAbaLista('categorias')" id="tab_categorias" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+          Categorias
+        </button>
+        <button type="button" onclick="selecionarAbaLista('responsaveis')" id="tab_responsaveis" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+          Responsáveis
+        </button>
+      </div>
+
+      <!-- Adicionar rápido na aba atual -->
+      <form onsubmit="adicionarItemListaModal(event)" class="flex gap-2">
+        <input type="text" id="inputNovoItemLista" required placeholder="Adicionar nova opção..."
+          class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-medium shrink-0 cursor-pointer">
+          + Incluir
+        </button>
+      </form>
+
+      <!-- Lista de itens editáveis -->
+      <div id="conteudoListaModal" class="max-h-64 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg px-3">
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Demanda -->
+  <div id="modalEditarDemanda" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Editar Demanda</h3>
+          <p class="text-xs text-slate-500">Altere qualquer informação desta demanda registrada</p>
+        </div>
+        <button onclick="fecharModalEditarDemanda()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="salvarEdicaoDemanda(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <input type="hidden" id="editDemandaId" />
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Data *</label>
+          <input type="date" id="editData" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Semestre *</label>
+          <select id="editSemestre" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Sistema *</label>
+          <select id="editSistema" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Categoria *</label>
+          <select id="editCategoria" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Responsável *</label>
+          <select id="editResponsavel" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Status *</label>
+          <select id="editStatus" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="Pendente">Pendente</option>
+            <option value="Em Andamento">Em Andamento</option>
+            <option value="Concluída">Concluída</option>
+          </select>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-medium text-slate-700 mb-1">Demanda Diária *</label>
+          <input type="text" id="editDescricao" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-medium text-slate-700 mb-1">Observações</label>
+          <input type="text" id="editObs"
+            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="sm:col-span-2 flex justify-end gap-2 pt-2">
+          <button type="button" onclick="fecharModalEditarDemanda()" class="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg cursor-pointer">
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // ACESSO MESTRE ÚNICO (NAPS)
+    // =========================================================================
+    const USUARIO_MESTRE = 'naps';
+    const SENHA_MESTRE = 'naps2026';
+    const CHAVE_SESSAO = 'naps_autenticado_v5';
+
+    const STORAGE_DEMANDAS = 'naps_demandas_v5';
+    const STORAGE_SEMESTRES = 'naps_semestres_v5';
+    const STORAGE_SISTEMAS = 'naps_sistemas_v5';
+    const STORAGE_CATEGORIAS = 'naps_categorias_v5';
+    const STORAGE_RESPONSAVEIS = 'naps_responsaveis_v5';
+
+    function gerarSemestresIniciais() {
+      const hoje = new Date();
+      const anoAtual = hoje.getFullYear();
+      const semAtual = hoje.getMonth() < 6 ? 1 : 2;
+      const lista = [];
+      let ano = anoAtual;
+      let sem = semAtual;
+      // Gera o semestre atual + pelo menos 3 semestres para frente (ex: 2026.2, 2027.1, 2027.2, 2028.1)
+      for (let i = 0; i < 4; i++) {
+        lista.push(`${ano}.${sem}`);
+        if (sem === 1) {
+          sem = 2;
+        } else {
+          sem = 1;
+          ano += 1;
+        }
+      }
+      return lista;
+    }
+
+    const SEMESTRES_PADRAO = gerarSemestresIniciais();
+    const SISTEMAS_PADRAO = ['SIGA', 'Vestib'];
+    const CATEGORIAS_PADRAO = ['Portfólio', 'Email', 'COI', 'Vestib Admin', 'VT', 'Outros'];
+    const RESPONSAVEIS_PADRAO = ['Clarissa'];
+
+    let semestres = JSON.parse(localStorage.getItem(STORAGE_SEMESTRES)) || [...SEMESTRES_PADRAO];
+    let sistemas = JSON.parse(localStorage.getItem(STORAGE_SISTEMAS)) || [...SISTEMAS_PADRAO];
+    let categorias = JSON.parse(localStorage.getItem(STORAGE_CATEGORIAS)) || [...CATEGORIAS_PADRAO];
+    let responsaveis = JSON.parse(localStorage.getItem(STORAGE_RESPONSAVEIS)) || [...RESPONSAVEIS_PADRAO];
+    let demandas = JSON.parse(localStorage.getItem(STORAGE_DEMANDAS));
+
+    let abaListaAtual = 'sistemas';
+
+    if (!demandas) {
+      const hoje = new Date().toISOString().split('T')[0];
+      const semAtual = calcularSemestre(hoje);
+      demandas = [
+        {
+          id: 1,
+          data: hoje,
+          semestre: semAtual,
+          sistema: 'SIGA',
+          categoria: 'Portfólio',
+          responsavel: 'Clarissa',
+          descricao: 'Atualização de registros acadêmicos e conferência de solicitações',
+          obs: 'Exemplo inicial - clique em Limpar Exemplos acima para remover',
+          status: 'Em Andamento',
+          atualizadoEm: formatarDataHoraAtual(),
+          exemplo: true
+        },
+        {
+          id: 2,
+          data: hoje,
+          semestre: semAtual,
+          sistema: 'Vestib',
+          categoria: 'Vestib Admin',
+          responsavel: 'Clarissa',
+          descricao: 'Conferência de inscrições e validação de documentação de candidatos',
+          obs: 'Exemplo inicial',
+          status: 'Pendente',
+          atualizadoEm: formatarDataHoraAtual(),
+          exemplo: true
+        }
+      ];
+      salvarDados();
+    }
+
+    function formatarDataHoraAtual() {
+      const agora = new Date();
+      const dia = String(agora.getDate()).padStart(2, '0');
+      const mes = String(agora.getMonth() + 1).padStart(2, '0');
+      const hora = String(agora.getHours()).padStart(2, '0');
+      const min = String(agora.getMinutes()).padStart(2, '0');
+      return `${dia}/${mes} às ${hora}:${min}`;
+    }
+
+    // =========================================================================
+    // LOGIN / LOGOUT
+    // =========================================================================
+    function verificarSessao() {
+      const autenticado = sessionStorage.getItem(CHAVE_SESSAO) === '1';
+      const telaLogin = document.getElementById('telaLogin');
+      const appConteudo = document.getElementById('appConteudo');
+
+      if (autenticado) {
+        telaLogin.classList.add('hidden');
+        appConteudo.classList.remove('hidden');
+        appConteudo.classList.add('flex');
+      } else {
+        telaLogin.classList.remove('hidden');
+        appConteudo.classList.add('hidden');
+        appConteudo.classList.remove('flex');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function efetuarLogin(event) {
+      event.preventDefault();
+      const usuarioDigitado = document.getElementById('loginUsuario').value.trim().toLowerCase();
+      const senhaDigitada = document.getElementById('loginSenha').value.trim();
+      const erroEl = document.getElementById('erroLogin');
+
+      if (usuarioDigitado === USUARIO_MESTRE && senhaDigitada === SENHA_MESTRE) {
+        sessionStorage.setItem(CHAVE_SESSAO, '1');
+        erroEl.classList.add('hidden');
+        document.getElementById('loginSenha').value = '';
+        verificarSessao();
+      } else {
+        erroEl.classList.remove('hidden');
+      }
+    }
+
+    function sairSistema() {
+      sessionStorage.removeItem(CHAVE_SESSAO);
+      document.getElementById('loginSenha').value = '';
+      verificarSessao();
+    }
+
+    // =========================================================================
+    // LISTAS DINÂMICAS: SEMESTRES, SISTEMAS, CATEGORIAS E RESPONSÁVEIS
+    // =========================================================================
+    function calcularSemestre(dataStr) {
+      if (!dataStr) return '';
+      const [ano, mes] = dataStr.split('-').map(Number);
+      const periodo = mes <= 6 ? 1 : 2;
+      return `${ano}.${periodo}`;
+    }
+
+    function atualizarSemestrePelaData() {
+      const dataVal = document.getElementById('inputData').value;
+      if (dataVal) {
+        const semCalc = calcularSemestre(dataVal);
+        if (!semestres.includes(semCalc)) {
+          semestres.unshift(semCalc);
+          salvarDados();
+        }
+        popularSelectSemestres(semCalc);
+      }
+    }
+
+    function salvarDados() {
+      localStorage.setItem(STORAGE_DEMANDAS, JSON.stringify(demandas));
+      localStorage.setItem(STORAGE_SEMESTRES, JSON.stringify(semestres));
+      localStorage.setItem(STORAGE_SISTEMAS, JSON.stringify(sistemas));
+      localStorage.setItem(STORAGE_CATEGORIAS, JSON.stringify(categorias));
+      localStorage.setItem(STORAGE_RESPONSAVEIS, JSON.stringify(responsaveis));
+    }
+
+    function popularSelectSemestres(selecionado = '') {
+      const select = document.getElementById('selectSemestre');
+      const filtro = document.getElementById('filtroSemestre');
+      const filtroAtual = filtro.value;
+      const valorAtualForm = select.value;
+
+      select.innerHTML = '';
+      semestres.forEach(sem => {
+        const opt = document.createElement('option');
+        opt.value = sem;
+        opt.textContent = sem;
+        select.appendChild(opt);
+      });
+
+      const optNovo = document.createElement('option');
+      optNovo.value = '__NOVO_SEM__';
+      optNovo.textContent = '+ Novo Semestre...';
+      select.appendChild(optNovo);
+
+      if (selecionado && semestres.includes(selecionado)) {
+        select.value = selecionado;
+      } else if (valorAtualForm && semestres.includes(valorAtualForm)) {
+        select.value = valorAtualForm;
+      }
+
+      const todosSemestres = [...new Set([...semestres, ...demandas.map(d => d.semestre)])];
+      filtro.innerHTML = '<option value="">Todos os Semestres</option>';
+      todosSemestres.forEach(sem => {
+        const opt = document.createElement('option');
+        opt.value = sem;
+        opt.textContent = sem;
+        filtro.appendChild(opt);
+      });
+      if (todosSemestres.includes(filtroAtual)) {
+        filtro.value = filtroAtual;
+      }
+    }
+
+    function popularSelectSistemas(selecionado = '') {
+      const select = document.getElementById('selectSistema');
+      const filtro = document.getElementById('filtroSistema');
+      const filtroAtual = filtro.value;
+      const valorAtualForm = select.value;
+
+      select.innerHTML = '';
+      sistemas.forEach(sis => {
+        const opt = document.createElement('option');
+        opt.value = sis;
+        opt.textContent = sis;
+        select.appendChild(opt);
+      });
+
+      const optNovo = document.createElement('option');
+      optNovo.value = '__NOVO__';
+      optNovo.textContent = '+ Novo Sistema...';
+      select.appendChild(optNovo);
+
+      if (selecionado && sistemas.includes(selecionado)) {
+        select.value = selecionado;
+      } else if (valorAtualForm && sistemas.includes(valorAtualForm)) {
+        select.value = valorAtualForm;
+      }
+
+      filtro.innerHTML = '<option value="">Todos os Sistemas</option>';
+      sistemas.forEach(sis => {
+        const opt = document.createElement('option');
+        opt.value = sis;
+        opt.textContent = sis;
+        filtro.appendChild(opt);
+      });
+      filtro.value = filtroAtual;
+    }
+
+    function popularSelectCategorias(selecionada = '') {
+      const select = document.getElementById('selectCategoria');
+      const filtro = document.getElementById('filtroCategoria');
+      const filtroAtual = filtro.value;
+      const valorAtualForm = select.value;
+
+      select.innerHTML = '';
+      categorias.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        select.appendChild(opt);
+      });
+
+      const optNova = document.createElement('option');
+      optNova.value = '__NOVA__';
+      optNova.textContent = '+ Nova Categoria...';
+      select.appendChild(optNova);
+
+      if (selecionada && categorias.includes(selecionada)) {
+        select.value = selecionada;
+      } else if (valorAtualForm && categorias.includes(valorAtualForm)) {
+        select.value = valorAtualForm;
+      }
+
+      filtro.innerHTML = '<option value="">Todas as Categorias</option>';
+      categorias.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        filtro.appendChild(opt);
+      });
+      filtro.value = filtroAtual;
+    }
+
+    function popularSelectResponsaveis(selecionado = '') {
+      const select = document.getElementById('selectResponsavel');
+      const filtro = document.getElementById('filtroResponsavel');
+      const filtroAtual = filtro.value;
+      const valorAtualForm = select.value;
+
+      select.innerHTML = '';
+      responsaveis.forEach(resp => {
+        const opt = document.createElement('option');
+        opt.value = resp;
+        opt.textContent = resp;
+        select.appendChild(opt);
+      });
+
+      const optNovo = document.createElement('option');
+      optNovo.value = '__NOVO_RESP__';
+      optNovo.textContent = '+ Incluir pessoa...';
+      select.appendChild(optNovo);
+
+      if (selecionado && responsaveis.includes(selecionado)) {
+        select.value = selecionado;
+      } else if (valorAtualForm && responsaveis.includes(valorAtualForm)) {
+        select.value = valorAtualForm;
+      }
+
+      filtro.innerHTML = '<option value="">Todos os Responsáveis</option>';
+      responsaveis.forEach(resp => {
+        const opt = document.createElement('option');
+        opt.value = resp;
+        opt.textContent = resp;
+        filtro.appendChild(opt);
+      });
+      filtro.value = filtroAtual;
+    }
+
+    function atualizarTodosSelects() {
+      popularSelectSemestres();
+      popularSelectSistemas();
+      popularSelectCategorias();
+      popularSelectResponsaveis();
+    }
+
+    // Modais de inclusão rápida
+    function verificarNovoSemestre(selectEl) {
+      if (selectEl.value === '__NOVO_SEM__') {
+        document.getElementById('modalSemestre').classList.remove('hidden');
+        const input = document.getElementById('inputNovoSemestre');
+        input.value = '';
+        setTimeout(() => input.focus(), 50);
+      }
+    }
+
+    function fecharModalSemestre() {
+      document.getElementById('modalSemestre').classList.add('hidden');
+      document.getElementById('selectSemestre').value = semestres[0] || '';
+    }
+
+    function confirmarNovoSemestre() {
+      const novo = document.getElementById('inputNovoSemestre').value.trim();
+      if (!novo) return;
+      if (!semestres.includes(novo)) {
+        semestres.push(novo);
+        salvarDados();
+      }
+      document.getElementById('modalSemestre').classList.add('hidden');
+      popularSelectSemestres(novo);
+    }
+
+    function verificarNovoSistema(selectEl) {
+      if (selectEl.value === '__NOVO__') {
+        document.getElementById('modalSistema').classList.remove('hidden');
+        const input = document.getElementById('inputNovoSistema');
+        input.value = '';
+        setTimeout(() => input.focus(), 50);
+      }
+    }
+
+    function fecharModalSistema() {
+      document.getElementById('modalSistema').classList.add('hidden');
+      document.getElementById('selectSistema').value = sistemas[0] || '';
+    }
+
+    function confirmarNovoSistema() {
+      const novo = document.getElementById('inputNovoSistema').value.trim();
+      if (!novo) return;
+      if (!sistemas.includes(novo)) {
+        sistemas.push(novo);
+        salvarDados();
+      }
+      document.getElementById('modalSistema').classList.add('hidden');
+      popularSelectSistemas(novo);
+    }
+
+    function verificarNovaCategoria(selectEl) {
+      if (selectEl.value === '__NOVA__') {
+        document.getElementById('modalCategoria').classList.remove('hidden');
+        const input = document.getElementById('inputNovaCategoria');
+        input.value = '';
+        setTimeout(() => input.focus(), 50);
+      }
+    }
+
+    function fecharModalCategoria() {
+      document.getElementById('modalCategoria').classList.add('hidden');
+      document.getElementById('selectCategoria').value = categorias[0] || '';
+    }
+
+    function confirmarNovaCategoria() {
+      const nova = document.getElementById('inputNovaCategoria').value.trim();
+      if (!nova) return;
+      if (!categorias.includes(nova)) {
+        categorias.push(nova);
+        salvarDados();
+      }
+      document.getElementById('modalCategoria').classList.add('hidden');
+      popularSelectCategorias(nova);
+    }
+
+    function verificarNovoResponsavel(selectEl) {
+      if (selectEl.value === '__NOVO_RESP__') {
+        document.getElementById('modalResponsavel').classList.remove('hidden');
+        const input = document.getElementById('inputNovoResponsavel');
+        input.value = '';
+        setTimeout(() => input.focus(), 50);
+      }
+    }
+
+    function fecharModalResponsavel() {
+      document.getElementById('modalResponsavel').classList.add('hidden');
+      document.getElementById('selectResponsavel').value = responsaveis[0] || '';
+    }
+
+    function confirmarNovoResponsavel() {
+      const novo = document.getElementById('inputNovoResponsavel').value.trim();
+      if (!novo) return;
+      if (!responsaveis.includes(novo)) {
+        responsaveis.push(novo);
+        salvarDados();
+      }
+      document.getElementById('modalResponsavel').classList.add('hidden');
+      popularSelectResponsaveis(novo);
+    }
+
+    // =========================================================================
+    // GERENCIAMENTO E EDIÇÃO DAS OPÇÕES DAS LISTAS
+    // =========================================================================
+    function abrirModalListas(aba = 'sistemas') {
+      document.getElementById('modalListas').classList.remove('hidden');
+      selecionarAbaLista(aba);
+    }
+
+    function fecharModalListas() {
+      document.getElementById('modalListas').classList.add('hidden');
+      atualizarTodosSelects();
+      renderizarTabela();
+    }
+
+    function getArrayPorAba(aba) {
+      if (aba === 'semestres') return semestres;
+      if (aba === 'sistemas') return sistemas;
+      if (aba === 'categorias') return categorias;
+      return responsaveis;
+    }
+
+    function selecionarAbaLista(aba) {
+      abaListaAtual = aba;
+      ['semestres', 'sistemas', 'categorias', 'responsaveis'].forEach(nome => {
+        const btn = document.getElementById('tab_' + nome);
+        if (nome === aba) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white cursor-pointer';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer';
+        }
+      });
+
+      const placeholders = {
+        semestres: 'Novo semestre (ex: 2028.1)...',
+        sistemas: 'Novo sistema (ex: SIGA)...',
+        categorias: 'Nova categoria (ex: Portfólio)...',
+        responsaveis: 'Novo nome de responsável...'
+      };
+      document.getElementById('inputNovoItemLista').placeholder = placeholders[aba] || 'Adicionar opção...';
+      renderizarConteudoListaModal();
+    }
+
+    function renderizarConteudoListaModal() {
+      const arr = getArrayPorAba(abaListaAtual);
+      const container = document.getElementById('conteudoListaModal');
+
+      if (arr.length === 0) {
+        container.innerHTML = '<p class="py-4 text-center text-xs text-slate-400">Nenhuma opção cadastrada.</p>';
+        return;
+      }
+
+      container.innerHTML = arr.map((item, idx) => `
+        <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
+          <span class="font-medium text-slate-800">${escapeHTML(item)}</span>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="editarItemListaModal(${idx})" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded font-medium cursor-pointer" title="Renomear opção">
+              Renomear
+            </button>
+            ${arr.length > 1 ? `
+              <button type="button" onclick="excluirItemListaModal(${idx})" class="text-rose-600 hover:bg-rose-50 px-2 py-1 rounded font-medium cursor-pointer" title="Excluir opção">
+                Excluir
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function adicionarItemListaModal(event) {
+      event.preventDefault();
+      const input = document.getElementById('inputNovoItemLista');
+      const valor = input.value.trim();
+      if (!valor) return;
+
+      const arr = getArrayPorAba(abaListaAtual);
+      if (arr.includes(valor)) {
+        alert('Essa opção já existe na lista.');
+        return;
+      }
+
+      arr.push(valor);
+      input.value = '';
+      salvarDados();
+      atualizarTodosSelects();
+      renderizarConteudoListaModal();
+    }
+
+    function editarItemListaModal(idx) {
+      const arr = getArrayPorAba(abaListaAtual);
+      const valorAntigo = arr[idx];
+      if (!valorAntigo) return;
+
+      const novoValor = prompt('Editar nome da opção:', valorAntigo);
+      if (novoValor === null) return;
+      const limpo = novoValor.trim();
+      if (!limpo || limpo === valorAntigo) return;
+
+      if (arr.includes(limpo)) {
+        alert('Já existe uma opção com esse nome.');
+        return;
+      }
+
+      arr[idx] = limpo;
+
+      // Atualiza também nas demandas já cadastradas para manter consistência
+      demandas.forEach(d => {
+        if (abaListaAtual === 'semestres' && d.semestre === valorAntigo) d.semestre = limpo;
+        if (abaListaAtual === 'sistemas' && d.sistema === valorAntigo) d.sistema = limpo;
+        if (abaListaAtual === 'categorias' && d.categoria === valorAntigo) d.categoria = limpo;
+        if (abaListaAtual === 'responsaveis' && d.responsavel === valorAntigo) d.responsavel = limpo;
+      });
+
+      salvarDados();
+      atualizarTodosSelects();
+      renderizarTabela();
+      renderizarConteudoListaModal();
+    }
+
+    function excluirItemListaModal(idx) {
+      const arr = getArrayPorAba(abaListaAtual);
+      if (arr.length <= 1) return;
+      arr.splice(idx, 1);
+      salvarDados();
+      atualizarTodosSelects();
+      renderizarConteudoListaModal();
+    }
+
+    // =========================================================================
+    // CRUD E EDIÇÃO DE DEMANDAS (SEM DUPLICIDADE NO MESMO DIA)
+    // =========================================================================
+    function normalizarTexto(txt) {
+      return (txt || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function adicionarDemanda(event) {
+      event.preventDefault();
+      const alertaDup = document.getElementById('alertaDuplicidade');
+      alertaDup.classList.add('hidden');
+
+      const data = document.getElementById('inputData').value;
+      const semestre = document.getElementById('selectSemestre').value;
+      const sistema = document.getElementById('selectSistema').value;
+      const categoria = document.getElementById('selectCategoria').value;
+      const responsavel = document.getElementById('selectResponsavel').value;
+      const descricao = document.getElementById('inputDescricao').value.trim();
+      const obs = document.getElementById('inputObs').value.trim();
+      const status = document.getElementById('selectStatus').value;
+
+      if (
+        !data ||
+        !semestre || semestre === '__NOVO_SEM__' ||
+        !sistema || sistema === '__NOVO__' ||
+        !categoria || categoria === '__NOVA__' ||
+        !responsavel || responsavel === '__NOVO_RESP__' ||
+        !descricao
+      ) return;
+
+      const descNorm = normalizarTexto(descricao);
+      const jaExiste = demandas.some(d =>
+        d.data === data &&
+        d.sistema === sistema &&
+        (d.categoria || '') === categoria &&
+        normalizarTexto(d.descricao) === descNorm
+      );
+
+      if (jaExiste) {
+        document.getElementById('textoAlertaDuplicidade').textContent =
+          `Demanda duplicada bloqueada: "${descricao}" já foi incluída em ${formatarDataBR(data)} (${sistema} • ${categoria}).`;
+        alertaDup.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      demandas.unshift({
+        id: Date.now(),
+        data,
+        semestre,
+        sistema,
+        categoria,
+        responsavel,
+        descricao,
+        obs,
+        status,
+        atualizadoEm: formatarDataHoraAtual(),
+        exemplo: false
+      });
+
+      salvarDados();
+      document.getElementById('inputDescricao').value = '';
+      document.getElementById('inputObs').value = '';
+      popularSelectSemestres(semestre);
+      renderizarTabela();
+    }
+
+    function abrirModalEditarDemanda(id) {
+      const item = demandas.find(d => d.id === id);
+      if (!item) return;
+
+      document.getElementById('editDemandaId').value = item.id;
+      document.getElementById('editData').value = item.data;
+
+      const editSem = document.getElementById('editSemestre');
+      const listaSem = [...new Set([...semestres, item.semestre])];
+      editSem.innerHTML = listaSem.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('');
+      editSem.value = item.semestre;
+
+      const editSis = document.getElementById('editSistema');
+      const listaSis = [...new Set([...sistemas, item.sistema])];
+      editSis.innerHTML = listaSis.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('');
+      editSis.value = item.sistema;
+
+      const editCat = document.getElementById('editCategoria');
+      const listaCat = [...new Set([...categorias, item.categoria || ''])].filter(Boolean);
+      editCat.innerHTML = listaCat.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+      editCat.value = item.categoria || '';
+
+      const editResp = document.getElementById('editResponsavel');
+      const listaResp = [...new Set([...responsaveis, item.responsavel || ''])].filter(Boolean);
+      editResp.innerHTML = listaResp.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('');
+      editResp.value = item.responsavel || '';
+
+      document.getElementById('editStatus').value = item.status;
+      document.getElementById('editDescricao').value = item.descricao;
+      document.getElementById('editObs').value = item.obs || '';
+
+      document.getElementById('modalEditarDemanda').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function fecharModalEditarDemanda() {
+      document.getElementById('modalEditarDemanda').classList.add('hidden');
+    }
+
+    function salvarEdicaoDemanda(event) {
+      event.preventDefault();
+      const id = Number(document.getElementById('editDemandaId').value);
+      const item = demandas.find(d => d.id === id);
+      if (!item) return;
+
+      item.data = document.getElementById('editData').value;
+      item.semestre = document.getElementById('editSemestre').value;
+      item.sistema = document.getElementById('editSistema').value;
+      item.categoria = document.getElementById('editCategoria').value;
+      item.responsavel = document.getElementById('editResponsavel').value;
+      item.status = document.getElementById('editStatus').value;
+      item.descricao = document.getElementById('editDescricao').value.trim();
+      item.obs = document.getElementById('editObs').value.trim();
+      item.atualizadoEm = formatarDataHoraAtual();
+
+      salvarDados();
+      fecharModalEditarDemanda();
+      renderizarTabela();
+    }
+
+    function alternarStatus(id) {
+      const ordem = ['Pendente', 'Em Andamento', 'Concluída'];
+      const item = demandas.find(d => d.id === id);
+      if (!item) return;
+
+      const proxIndex = (ordem.indexOf(item.status) + 1) % ordem.length;
+      item.status = ordem[proxIndex];
+      item.atualizadoEm = formatarDataHoraAtual();
+
+      salvarDados();
+      renderizarTabela();
+    }
+
+    function excluirDemanda(id) {
+      demandas = demandas.filter(d => d.id !== id);
+      salvarDados();
+      popularSelectSemestres();
+      renderizarTabela();
+    }
+
+    function limparExemplos() {
+      demandas = demandas.filter(d => !d.exemplo);
+      salvarDados();
+      popularSelectSemestres();
+      renderizarTabela();
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroBusca').value = '';
+      document.getElementById('filtroSemestre').value = '';
+      document.getElementById('filtroSistema').value = '';
+      document.getElementById('filtroCategoria').value = '';
+      document.getElementById('filtroResponsavel').value = '';
+      document.getElementById('filtroData').value = '';
+      document.getElementById('filtroStatus').value = '';
+      renderizarTabela();
+    }
+
+    function formatarDataBR(dataISO) {
+      if (!dataISO) return '';
+      const [ano, mes, dia] = dataISO.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function badgeStatus(status) {
+      if (status === 'Concluída') {
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+      }
+      if (status === 'Em Andamento') {
+        return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
+      }
+      return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+    }
+
+    function renderizarTabela() {
+      const busca = document.getElementById('filtroBusca').value.toLowerCase();
+      const sem = document.getElementById('filtroSemestre').value;
+      const sis = document.getElementById('filtroSistema').value;
+      const cat = document.getElementById('filtroCategoria').value;
+      const resp = document.getElementById('filtroResponsavel').value;
+      const dt = document.getElementById('filtroData').value;
+      const st = document.getElementById('filtroStatus').value;
+
+      const temExemplo = demandas.some(d => d.exemplo);
+      document.getElementById('btnLimparExemplos').classList.toggle('hidden', !temExemplo);
+
+      const filtradas = demandas.filter(d => {
+        const matchBusca = !busca ||
+          d.descricao.toLowerCase().includes(busca) ||
+          (d.obs && d.obs.toLowerCase().includes(busca)) ||
+          (d.responsavel && d.responsavel.toLowerCase().includes(busca));
+        const matchSem = !sem || d.semestre === sem;
+        const matchSis = !sis || d.sistema === sis;
+        const matchCat = !cat || (d.categoria || '') === cat;
+        const matchResp = !resp || (d.responsavel || '') === resp;
+        const matchDt = !dt || d.data === dt;
+        const matchSt = !st || d.status === st;
+        return matchBusca && matchSem && matchSis && matchCat && matchResp && matchDt && matchSt;
+      });
+
+      document.getElementById('kpiTotal').textContent = filtradas.length;
+      document.getElementById('kpiPendentes').textContent = filtradas.filter(d => d.status === 'Pendente').length;
+      document.getElementById('kpiAndamento').textContent = filtradas.filter(d => d.status === 'Em Andamento').length;
+      document.getElementById('kpiConcluidas').textContent = filtradas.filter(d => d.status === 'Concluída').length;
+
+      const tbody = document.getElementById('tabelaCorpo');
+      const vazio = document.getElementById('estadoVazio');
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = '';
+        vazio.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      vazio.classList.add('hidden');
+      tbody.innerHTML = filtradas.map(d => `
+        <tr class="hover:bg-slate-50/80 transition">
+          <td class="py-3 px-4 whitespace-nowrap font-medium text-slate-700">${formatarDataBR(d.data)}</td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+              ${escapeHTML(d.semestre)}
+            </span>
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <div class="flex flex-col items-start gap-1">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                ${escapeHTML(d.sistema)}
+              </span>
+              ${d.categoria ? `
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">
+                  ${escapeHTML(d.categoria)}
+                </span>
+              ` : ''}
+            </div>
+          </td>
+          <td class="py-3 px-4">
+            <p class="text-slate-900 font-medium">${escapeHTML(d.descricao)}</p>
+            ${d.obs ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHTML(d.obs)}</p>` : ''}
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-800">
+              <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span>${escapeHTML(d.responsavel || '—')}</span>
+            </span>
+            ${d.atualizadoEm ? `<p class="text-[11px] text-slate-400 mt-1">${escapeHTML(d.atualizadoEm)}</p>` : ''}
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <button onclick="alternarStatus(${d.id})" title="Clique para alternar o status"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition cursor-pointer ${badgeStatus(d.status)}">
+              <span>${escapeHTML(d.status)}</span>
+              <i data-lucide="refresh-cw" class="w-3 h-3 opacity-60"></i>
+            </button>
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap text-right">
+            <div class="inline-flex items-center gap-1">
+              <button onclick="abrirModalEditarDemanda(${d.id})" title="Editar demanda"
+                class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+              </button>
+              <button onclick="excluirDemanda(${d.id})" title="Excluir demanda"
+                class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function exportarCSV() {
+      if (demandas.length === 0) {
+        alert('Não há demandas para exportar.');
+        return;
+      }
+
+      const cabecalho = ['Data', 'Semestre', 'Sistema', 'Categoria', 'Responsavel', 'Demanda Diaria', 'Observacoes', 'Status', 'Ultima Atualizacao'];
+      const linhas = demandas.map(d => [
+        formatarDataBR(d.data),
+        d.semestre,
+        d.sistema,
+        d.categoria || '',
+        `"${(d.responsavel || '').replace(/"/g, '""')}"`,
+        `"${(d.descricao || '').replace(/"/g, '""')}"`,
+        `"${(d.obs || '').replace(/"/g, '""')}"`,
+        d.status,
+        d.atualizadoEm || ''
+      ].join(';'));
+
+      const quebraLinha = String.fromCharCode(10);
+      const bom = String.fromCharCode(65279);
+      const conteudo = bom + [cabecalho.join(';'), ...linhas].join(quebraLinha);
+      const blob = new Blob([conteudo], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `demandas_naps_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    (function init() {
+      const hoje = new Date().toISOString().split('T')[0];
+      document.getElementById('inputData').value = hoje;
+      atualizarTodosSelects();
+      atualizarSemestrePelaData();
+      renderizarTabela();
+      verificarSessao();
+    })();
+  </script>
+</body>
+</html>
